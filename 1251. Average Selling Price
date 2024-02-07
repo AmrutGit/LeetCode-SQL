@@ -1,0 +1,18 @@
+select p.product_id, nvl(round(sum(price*units)/sum(units),2),0) average_price
+from UnitsSold u full join Prices p 
+on p.product_id = u.product_id
+and u.purchase_date between p.start_date and p.end_date 
+group by p.product_id;
+
+or 
+
+select product_id, coalesce(round(sum(p_sum/a_count), 2), 0) as average_price
+from
+(
+    select p.product_id, p.price*u.units p_sum,
+    sum(u.units) over(partition by p.product_id order by p.product_id rows between unbounded preceding and unbounded following) a_count
+    from prices p
+    left join unitssold u
+    on p.product_id = u.product_id and u.purchase_date between start_date and end_date
+)
+group by product_id
